@@ -24,14 +24,54 @@ $(function() {
         this.timestamp = timestamp;
     }
 
+    function parseISOString(s) {
+        var b = s.split(/\D+/);
+        return new Date(Date.UTC(b[0], --b[1], b[2], b[3], b[4], b[5], b[6]));
+      }
+
+    function isSingular(num, str) {
+        if (num === 1) {
+            return `${num} ${str}`
+        } else {
+            return `${num} ${str}s`
+        }
+    }
+
+    function dateDiff (date) {
+        let current = new Date();
+        let prior = parseISOString(date);
+        let diff = current-prior;
+        let sec = 1000;
+        let min = 60 * sec;
+        let hr = 60 * min;
+        let day = 24 * hr;
+        let mth = 30 * day;
+        let yr = (12 * mth) + (5.25 * day)
+
+        if (diff < min) {
+            return 'Just now'
+        } else if (diff < hr) {
+            return `${isSingular(Math.floor(diff/min), 'minute')} ago`
+        }   else if (diff < day) {
+            return `${isSingular(Math.floor(diff/hr), 'hour')} ago`
+        } else if (diff < mth) {
+            return `${isSingular(Math.floor(diff/day), 'day')} ago`
+        } else if (diff < yr) {
+            return `${isSingular(Math.floor(diff/mth), 'month')} ago`
+        } else {
+            return `${isSingular(Math.floor(diff/yr), 'year')} ago`
+        }
+    }
+
     var refresh = function() {
          $.get(destination,function(data) {
             let index = 0;
+
             data.reverse().forEach(function(e) {
-                $(`#feed`).append(`<div id="${index}" class="chirp"></div>`);
+                $(`#feed`).append(`<li id="${index}" class="chirp"></li>`);
                 $(`#${index}`).append(`<div class="user">${e.user}</div>`);
                 $(`#${index}`).append(`<div class="msg">${e.message}</div>`);
-                $(`#${index}`).append(`<div class="ts">${e.timestamp}</div>`);
+                $(`#${index}`).append(`<div class="ts">${dateDiff(e.timestamp)}</div>`);
                 index += 1;
             });
         })
@@ -60,7 +100,7 @@ $(function() {
             ms = tripleDigits(now.getMilliseconds()),
             formattedDate = `${yr}-${mo}-${d} ${h}:${mi}:${s}`,
 
-            chirp = new Chirp($(`#chirp-text`).val(), formattedDate),
+            chirp = new Chirp($(`#chirp-text`).val(), now);
             chirpJSON = JSON.stringify(chirp);
 
          let postChirp = $.ajax({
